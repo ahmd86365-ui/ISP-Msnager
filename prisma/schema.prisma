@@ -1,0 +1,473 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  OWNER
+  ADMIN
+  ACCOUNTANT
+  SUPPORT
+  TECHNICIAN
+}
+
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+// Shared operational status for network inventory records (distribution
+// points, devices, switch ports) — kept minimal and reused instead of
+// defining near-duplicate enums per entity.
+enum EquipmentStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+  DISABLED
+}
+
+enum NetworkDeviceType {
+  ROUTER
+  SWITCH
+  ACCESS_POINT
+  CPE
+  OTHER
+}
+
+enum BillingPeriod {
+  MONTHLY
+  QUARTERLY
+  SEMI_ANNUAL
+  ANNUAL
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  SUSPENDED
+  CANCELLED
+  PENDING
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  WALLET
+  OTHER
+}
+
+enum TicketCategory {
+  INTERNET_DOWN
+  SLOW_SPEED
+  SIGNAL
+  DEVICE
+  CABLE
+  BILLING
+  INSTALLATION
+  OTHER
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING
+  RESOLVED
+  CLOSED
+}
+
+// ---------------------------------------------------------------------------
+// Identity & settings
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  name         String
+  passwordHash String
+  role         Role
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  payments        Payment[]
+  ticketsCreated  Ticket[]        @relation("TicketCreatedBy")
+  ticketsAssigned Ticket[]        @relation("TicketAssignedTechnician")
+  ticketsResolved Ticket[]        @relation("TicketResolvedBy")
+  ticketComments  TicketComment[]
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+  paymentsVoided  Payment[]       @relation("PaymentVoidedBy")
+}
+
+// Singleton configuration row. Application code always reads/writes the row
+// with id "singleton" — there is intentionally no database-level constraint
+// forcing a single row, since this is internal configuration, not a business
+// record that needs that level of enforcement.
+model AppSettings {
+  id           String   @id @default("singleton")
+  businessName String
+  currency     String   @default("SYP")
+  timezone     String   @default("Asia/Damascus")
+  settings     Json?
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+}
+
+// ---------------------------------------------------------------------------
+// Customers & buildings
+// ---------------------------------------------------------------------------
+
+model Customer {
+  id             String         @id @default(cuid())
+  customerNumber String         @unique
+  fullName       String
+  phone          String
+  phone2         String?
+  address        String
+  unitLabel      String
+  notes          String?
+  status         CustomerStatus @default(ACTIVE)
+  createdAt      DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime       @updatedAt @db.Timestamptz(3)
+
+  buildingId String
+  building   Building @relation(fields: [buildingId], references: [id], onDelete: Restrict)
+
+  subscriptions      Subscription[]
+  payments           Payment[]
+  tickets            Ticket[]
+  networkAssignments NetworkAssignment[]
+
+  @@index([buildingId])
+  @@index([status])
+  @@index([fullName])
+  @@index([phone])
+}
+
+model Building {
+  name    String
+  address String
+  area    String
+  lat     Float?
+  lng     Float?
+  notes   String?
+
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  distributionPointId String
+  distributionPoint   DistributionPoint @relation(fields: [distributionPointId], references: [id], onDelete: Restrict)
+
+  customers Customer[]
+  devices   NetworkDevice[]
+
+  @@index([distributionPointId])
+}
+
+// ---------------------------------------------------------------------------
+// Network inventory
+// ---------------------------------------------------------------------------
+
+model DistributionPoint {
+  id          String          @id @default(cuid())
+  name        String
+  code        String          @unique
+  area        String
+  description String?
+  lat         Float?
+  lng         Float?
+  status      EquipmentStatus @default(ACTIVE)
+  notes       String?
+  createdAt   DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime        @updatedAt @db.Timestamptz(3)
+
+  buildings          Building[]
+  devices            NetworkDevice[]
+  networkAssignments NetworkAssignment[]
+}
+
+model NetworkDevice {
+  id           String            @id @default(cuid())
+  name         String
+  hostname     String?
+  type         NetworkDeviceType
+  vendor       String
+  model        String
+  serialNumber String?           @unique
+  mac          String?           @unique
+  managementIp String?           @unique
+  status       EquipmentStatus   @default(ACTIVE)
+  notes        String?
+  createdAt    DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime          @updatedAt @db.Timestamptz(3)
+
+  distributionPointId String
+  distributionPoint   DistributionPoint @relation(fields: [distributionPointId], references: [id], onDelete: Restrict)
+
+  buildingId String?
+  building   Building? @relation(fields: [buildingId], references: [id], onDelete: SetNull)
+
+  ports              SwitchPort[]
+  networkAssignments NetworkAssignment[]
+
+  @@index([distributionPointId])
+  @@index([buildingId])
+}
+
+model SwitchPort {
+  id         String          @id @default(cuid())
+  portNumber Int
+  label      String?
+  status     EquipmentStatus @default(ACTIVE)
+  notes      String?
+  createdAt  DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime        @updatedAt @db.Timestamptz(3)
+
+  deviceId String
+  device   NetworkDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  networkAssignments NetworkAssignment[]
+
+  @@unique([deviceId, portNumber])
+}
+
+// Historical record of where a customer has been connected in the network.
+// Rows are never deleted or overwritten — a change in connectivity closes
+// the current row (endDate set, isCurrent = false) and opens a new one.
+// A partial unique index enforcing "at most one isCurrent row per customer"
+// is added via raw SQL in the initial migration (see migration.sql) since
+// Prisma schema cannot express a WHERE-scoped unique constraint here.
+model NetworkAssignment {
+  id         String    @id @default(cuid())
+  ipAddress  String?
+  macAddress String?
+  startDate  DateTime  @db.Timestamptz(3)
+  endDate    DateTime? @db.Timestamptz(3)
+  isCurrent  Boolean   @default(true)
+  notes      String?
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime  @updatedAt @db.Timestamptz(3)
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  switchPortId String?
+  switchPort   SwitchPort? @relation(fields: [switchPortId], references: [id], onDelete: Restrict)
+
+  distributionPointId String?
+  distributionPoint   DistributionPoint? @relation(fields: [distributionPointId], references: [id], onDelete: Restrict)
+
+  deviceId String?
+  device   NetworkDevice? @relation(fields: [deviceId], references: [id], onDelete: Restrict)
+
+  @@index([customerId, isCurrent])
+  @@index([switchPortId])
+  @@index([distributionPointId])
+  @@index([deviceId])
+}
+
+// ---------------------------------------------------------------------------
+// Plans & subscriptions
+// ---------------------------------------------------------------------------
+
+model Plan {
+  id            String        @id @default(cuid())
+  name          String        @unique
+  description   String?
+  downloadMbps  Int
+  uploadMbps    Int
+  priceSyp      Int
+  billingPeriod BillingPeriod
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime      @updatedAt @db.Timestamptz(3)
+
+  subscriptions Subscription[]
+}
+
+// A subscription row represents one billed period for a customer on a plan.
+// Renewing or switching plans creates a new row instead of mutating the old
+// one, so historical pricing and periods stay intact. A partial unique index
+// enforcing "at most one ACTIVE subscription per customer" is added via raw
+// SQL in the initial migration (see migration.sql).
+model Subscription {
+  id                     String             @id @default(cuid())
+  startDate              DateTime           @db.Timestamptz(3)
+  endDate                DateTime           @db.Timestamptz(3)
+  status                 SubscriptionStatus @default(PENDING)
+  priceAtSubscriptionSyp Int
+  notes                  String?
+  createdAt              DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt              DateTime           @updatedAt @db.Timestamptz(3)
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  planId String
+  plan   Plan   @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  payments Payment[]
+
+  @@index([customerId, status])
+  @@index([planId])
+}
+
+// ---------------------------------------------------------------------------
+// Payments
+// ---------------------------------------------------------------------------
+
+// Payments are never deleted. A correction is recorded by voiding the
+// payment (isVoided + voidedAt/voidedBy/voidReason), preserving full
+// history. A CHECK constraint enforcing amountSyp > 0 is added via raw SQL
+// in the initial migration (see migration.sql).
+model Payment {
+  id         String        @id @default(cuid())
+  amountSyp  Int
+  method     PaymentMethod
+  paidAt     DateTime      @db.Timestamptz(3)
+  reference  String?
+  notes      String?
+  isVoided   Boolean       @default(false)
+  voidedAt   DateTime?     @db.Timestamptz(3)
+  voidReason String?
+  createdAt  DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime      @updatedAt @db.Timestamptz(3)
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  voidedById String?
+  voidedBy   User?   @relation("PaymentVoidedBy", fields: [voidedById], references: [id], onDelete: SetNull)
+
+  @@index([customerId, paidAt])
+  @@index([subscriptionId])
+  @@index([createdById])
+}
+
+// ---------------------------------------------------------------------------
+// Tickets
+// ---------------------------------------------------------------------------
+
+model Ticket {
+  id          String         @id @default(cuid())
+  title       String
+  description String
+  category    TicketCategory
+  priority    TicketPriority @default(MEDIUM)
+  status      TicketStatus   @default(OPEN)
+  notes       String?
+  createdAt   DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime       @updatedAt @db.Timestamptz(3)
+  resolvedAt  DateTime?      @db.Timestamptz(3)
+
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  assignedTechnicianId String?
+  assignedTechnician   User?   @relation("TicketAssignedTechnician", fields: [assignedTechnicianId], references: [id], onDelete: SetNull)
+
+  createdById String
+  createdBy   User   @relation("TicketCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+
+  resolvedById String?
+  resolvedBy   User?   @relation("TicketResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  comments TicketComment[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([assignedTechnicianId])
+}
+
+model TicketComment {
+  id        String   @id @default(cuid())
+  body      String
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([ticketId])
+}
+
+// ---------------------------------------------------------------------------
+// Inventory
+// ---------------------------------------------------------------------------
+
+model InventoryItem {
+  id          String   @id @default(cuid())
+  name        String
+  category    String
+  sku         String?  @unique
+  quantity    Int      @default(0)
+  minQuantity Int      @default(0)
+  unit        String
+  notes       String?
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+}
+
+// ---------------------------------------------------------------------------
+// Audit & notifications
+// ---------------------------------------------------------------------------
+
+// Append-only. Never updated or deleted.
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String
+  entityType String
+  entityId   String
+  summary    String
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  actorId String?
+  actor   User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+}
+
+model Notification {
+  id                String   @id @default(cuid())
+  type              String
+  title             String
+  body              String
+  isRead            Boolean  @default(false)
+  relatedEntityType String?
+  relatedEntityId   String?
+  createdAt         DateTime @default(now()) @db.Timestamptz(3)
+
+  recipientId String
+  recipient   User   @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, isRead])
+}
