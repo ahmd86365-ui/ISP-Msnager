@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { EquipmentStatusBadge } from "@/components/shared/equipment-status-badge";
 import { EditDeviceDialog } from "@/components/network/edit-device-dialog";
+import { DeleteDeviceDialog } from "@/components/network/delete-device-dialog";
 import { AddPortDialog } from "@/components/network/add-port-dialog";
 import { PortsTable } from "@/components/network/ports-table";
 import { getDeviceById } from "@/lib/network/devices/queries";
@@ -45,6 +46,14 @@ export default async function DeviceDetailPage({
               device={device}
               distributionPoints={distributionPoints}
               buildings={buildings}
+              buttonVariant="outline"
+              buttonSize="sm"
+              showLabel
+            />
+            <DeleteDeviceDialog
+              deviceId={device.id}
+              deviceName={device.name}
+              redirectTo="/network/devices"
               buttonVariant="outline"
               buttonSize="sm"
               showLabel

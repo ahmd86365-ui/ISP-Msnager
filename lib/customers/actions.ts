@@ -4,8 +4,11 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import type { DeleteActionResult } from "@/components/shared/delete-confirm-dialog";
+import { DeleteBlockedError } from "@/lib/shared/errors";
 import { generateCustomerNumber } from "./customer-number";
 import { createCustomerSchema, updateCustomerSchema } from "./schema";
+import { deleteCustomer } from "./service";
 
 export interface CustomerFormState {
   errors?: Record<string, string[]>;
@@ -123,4 +126,23 @@ export async function archiveCustomerAction(customerId: string): Promise<void> {
 
   revalidatePath("/customers");
   revalidatePath(`/customers/${customerId}`);
+}
+
+export async function deleteCustomerAction(customerId: string): Promise<DeleteActionResult> {
+  const session = await auth();
+  if (!session) {
+    return { error: "يجب تسجيل الدخول للقيام بهذا الإجراء." };
+  }
+
+  try {
+    await deleteCustomer(customerId, session.user.id);
+  } catch (err) {
+    if (err instanceof DeleteBlockedError) {
+      return { error: err.reasons.join(" ") };
+    }
+    return { error: "حدث خطأ أثناء حذف المشترك. حاول مرة أخرى." };
+  }
+
+  revalidatePath("/customers");
+  return { ok: true };
 }

@@ -13,6 +13,7 @@ import { formatNumber, formatSyp } from "@/lib/format";
 import { PlanStatusBadge } from "./plan-status-badge";
 import { EditPlanDialog } from "./edit-plan-dialog";
 import { TogglePlanActiveButton } from "./toggle-plan-active-button";
+import { DeletePlanDialog } from "./delete-plan-dialog";
 
 type PlanRow = Plan & { activeSubscribersCount: number };
 
@@ -65,6 +66,7 @@ export function PlansTable({ plans }: { plans: PlanRow[] }) {
                 <div className="flex items-center justify-end gap-1.5">
                   <EditPlanDialog plan={plan} />
                   <TogglePlanActiveButton planId={plan.id} isActive={plan.isActive} />
+                  <DeletePlanDialog planId={plan.id} planName={plan.name} />
                 </div>
               </TableCell>
             </TableRow>

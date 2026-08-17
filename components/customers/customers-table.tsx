@@ -14,6 +14,7 @@ import {
 import { CustomerStatusBadge } from "./customer-status-badge";
 import { EditCustomerDialog } from "./edit-customer-dialog";
 import { ArchiveCustomerDialog } from "./archive-customer-dialog";
+import { DeleteCustomerDialog } from "./delete-customer-dialog";
 
 interface Building {
   id: string;
@@ -105,6 +106,13 @@ export function CustomersTable({
                       showLabel={false}
                     />
                   )}
+                  <DeleteCustomerDialog
+                    customerId={customer.id}
+                    customerName={customer.fullName}
+                    buttonVariant="ghost"
+                    buttonSize="icon-sm"
+                    showLabel={false}
+                  />
                 </div>
               </TableCell>
             </TableRow>

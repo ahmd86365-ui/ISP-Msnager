@@ -4,7 +4,10 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import type { DeleteActionResult } from "@/components/shared/delete-confirm-dialog";
+import { DeleteBlockedError } from "@/lib/shared/errors";
 import { createBuildingSchema, updateBuildingSchema } from "./schema";
+import { deleteBuilding } from "./service";
 
 export interface BuildingFormState {
   errors?: Record<string, string[]>;
@@ -47,6 +50,25 @@ export async function createBuildingAction(
     });
   } catch {
     return { errors: { _form: ["حدث خطأ أثناء إضافة البناء. حاول مرة أخرى."] } };
+  }
+
+  revalidatePath("/network/buildings");
+  return { ok: true };
+}
+
+export async function deleteBuildingAction(buildingId: string): Promise<DeleteActionResult> {
+  const session = await auth();
+  if (!session) {
+    return { error: "يجب تسجيل الدخول للقيام بهذا الإجراء." };
+  }
+
+  try {
+    await deleteBuilding(buildingId, session.user.id);
+  } catch (err) {
+    if (err instanceof DeleteBlockedError) {
+      return { error: err.reasons.join(" ") };
+    }
+    return { error: "حدث خطأ أثناء حذف البناء. حاول مرة أخرى." };
   }
 
   revalidatePath("/network/buildings");

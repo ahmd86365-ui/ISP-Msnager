@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/table";
 import { formatNumber } from "@/lib/format";
 import { EditBuildingDialog } from "./edit-building-dialog";
+import { DeleteBuildingDialog } from "./delete-building-dialog";
 
 interface DistributionPointOption {
   id: string;
@@ -68,6 +69,7 @@ export function BuildingsTable({
               <TableCell>
                 <div className="flex items-center justify-end gap-1.5">
                   <EditBuildingDialog building={building} distributionPoints={distributionPoints} />
+                  <DeleteBuildingDialog buildingId={building.id} buildingName={building.name} />
                 </div>
               </TableCell>
             </TableRow>

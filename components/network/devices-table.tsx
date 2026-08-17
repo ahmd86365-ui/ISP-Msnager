@@ -15,6 +15,7 @@ import { EquipmentStatusBadge } from "@/components/shared/equipment-status-badge
 import { NETWORK_DEVICE_TYPE_LABELS } from "@/lib/labels";
 import { formatNumber } from "@/lib/format";
 import { EditDeviceDialog } from "./edit-device-dialog";
+import { DeleteDeviceDialog } from "./delete-device-dialog";
 
 interface DistributionPointOption {
   id: string;
@@ -119,6 +120,7 @@ export function DevicesTable({
                     distributionPoints={distributionPoints}
                     buildings={buildings}
                   />
+                  <DeleteDeviceDialog deviceId={device.id} deviceName={device.name} />
                 </div>
               </TableCell>
             </TableRow>

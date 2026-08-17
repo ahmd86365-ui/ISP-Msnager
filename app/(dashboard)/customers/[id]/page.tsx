@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CustomerStatusBadge } from "@/components/customers/customer-status-badge";
 import { EditCustomerDialog } from "@/components/customers/edit-customer-dialog";
 import { ArchiveCustomerDialog } from "@/components/customers/archive-customer-dialog";
+import { DeleteCustomerDialog } from "@/components/customers/delete-customer-dialog";
 import { CustomerSubscriptionSummary } from "@/components/customers/customer-subscription-summary";
 import { CustomerNetworkSummary } from "@/components/customers/customer-network-summary";
 import { CustomerTicketsSummary } from "@/components/customers/customer-tickets-summary";
@@ -88,6 +89,11 @@ export default async function CustomerDetailPage({
                 customerName={customer.fullName}
               />
             )}
+            <DeleteCustomerDialog
+              customerId={customer.id}
+              customerName={customer.fullName}
+              redirectTo="/customers"
+            />
           </div>
         </CardContent>
       </Card>

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { EquipmentStatusBadge } from "@/components/shared/equipment-status-badge";
 import { EditPortDialog } from "./edit-port-dialog";
+import { DeletePortDialog } from "./delete-port-dialog";
 
 type PortRow = SwitchPort & {
   networkAssignments: {
@@ -64,8 +65,13 @@ export function PortsTable({ deviceId, ports }: { deviceId: string; ports: PortR
                   )}
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center justify-end">
+                  <div className="flex items-center justify-end gap-1.5">
                     <EditPortDialog deviceId={deviceId} port={port} />
+                    <DeletePortDialog
+                      deviceId={deviceId}
+                      portId={port.id}
+                      portNumber={port.portNumber}
+                    />
                   </div>
                 </TableCell>
               </TableRow>

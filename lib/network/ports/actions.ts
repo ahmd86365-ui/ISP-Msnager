@@ -6,7 +6,10 @@ import { Prisma } from "@prisma/client";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import type { DeleteActionResult } from "@/components/shared/delete-confirm-dialog";
+import { DeleteBlockedError } from "@/lib/shared/errors";
 import { createPortSchema, updatePortSchema } from "./schema";
+import { deletePort } from "./service";
 
 export interface PortFormState {
   errors?: Record<string, string[]>;
@@ -61,6 +64,28 @@ export async function createPortAction(
       return { errors: { portNumber: [DUPLICATE_PORT_MESSAGE] } };
     }
     return { errors: { _form: ["حدث خطأ أثناء إضافة المنفذ. حاول مرة أخرى."] } };
+  }
+
+  revalidatePath(`/network/devices/${deviceId}`);
+  return { ok: true };
+}
+
+export async function deletePortAction(
+  deviceId: string,
+  portId: string,
+): Promise<DeleteActionResult> {
+  const session = await auth();
+  if (!session) {
+    return { error: "يجب تسجيل الدخول للقيام بهذا الإجراء." };
+  }
+
+  try {
+    await deletePort(portId, deviceId, session.user.id);
+  } catch (err) {
+    if (err instanceof DeleteBlockedError) {
+      return { error: err.reasons.join(" ") };
+    }
+    return { error: "حدث خطأ أثناء حذف المنفذ. حاول مرة أخرى." };
   }
 
   revalidatePath(`/network/devices/${deviceId}`);

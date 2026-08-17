@@ -6,7 +6,10 @@ import { Prisma } from "@prisma/client";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import type { DeleteActionResult } from "@/components/shared/delete-confirm-dialog";
+import { DeleteBlockedError } from "@/lib/shared/errors";
 import { createDistributionPointSchema, updateDistributionPointSchema } from "./schema";
+import { deleteDistributionPoint } from "./service";
 
 export interface DistributionPointFormState {
   errors?: Record<string, string[]>;
@@ -58,6 +61,25 @@ export async function createDistributionPointAction(
       return { errors: { code: [DUPLICATE_CODE_MESSAGE] } };
     }
     return { errors: { _form: ["حدث خطأ أثناء إضافة نقطة التوزيع. حاول مرة أخرى."] } };
+  }
+
+  revalidatePath("/network/distribution-points");
+  return { ok: true };
+}
+
+export async function deleteDistributionPointAction(pointId: string): Promise<DeleteActionResult> {
+  const session = await auth();
+  if (!session) {
+    return { error: "يجب تسجيل الدخول للقيام بهذا الإجراء." };
+  }
+
+  try {
+    await deleteDistributionPoint(pointId, session.user.id);
+  } catch (err) {
+    if (err instanceof DeleteBlockedError) {
+      return { error: err.reasons.join(" ") };
+    }
+    return { error: "حدث خطأ أثناء حذف نقطة التوزيع. حاول مرة أخرى." };
   }
 
   revalidatePath("/network/distribution-points");

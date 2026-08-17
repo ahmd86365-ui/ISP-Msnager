@@ -6,7 +6,10 @@ import { Prisma } from "@prisma/client";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import type { DeleteActionResult } from "@/components/shared/delete-confirm-dialog";
+import { DeleteBlockedError } from "@/lib/shared/errors";
 import { createPlanSchema, updatePlanSchema } from "./schema";
+import { deletePlan } from "./service";
 
 const DUPLICATE_NAME_MESSAGE = "يوجد بالفعل باقة بنفس هذا الاسم. اختر اسماً مختلفاً.";
 
@@ -130,4 +133,23 @@ export async function togglePlanActiveAction(planId: string): Promise<void> {
   });
 
   revalidatePath("/plans");
+}
+
+export async function deletePlanAction(planId: string): Promise<DeleteActionResult> {
+  const session = await auth();
+  if (!session) {
+    return { error: "يجب تسجيل الدخول للقيام بهذا الإجراء." };
+  }
+
+  try {
+    await deletePlan(planId, session.user.id);
+  } catch (err) {
+    if (err instanceof DeleteBlockedError) {
+      return { error: err.reasons.join(" ") };
+    }
+    return { error: "حدث خطأ أثناء حذف الباقة. حاول مرة أخرى." };
+  }
+
+  revalidatePath("/plans");
+  return { ok: true };
 }

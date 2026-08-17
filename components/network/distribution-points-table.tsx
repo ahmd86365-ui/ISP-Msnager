@@ -12,6 +12,7 @@ import {
 import { EquipmentStatusBadge } from "@/components/shared/equipment-status-badge";
 import { formatNumber } from "@/lib/format";
 import { EditDistributionPointDialog } from "./edit-distribution-point-dialog";
+import { DeleteDistributionPointDialog } from "./delete-distribution-point-dialog";
 
 type DistributionPointRow = DistributionPoint & {
   devicesCount: number;
@@ -74,6 +75,7 @@ export function DistributionPointsTable({ points }: { points: DistributionPointR
               <TableCell>
                 <div className="flex items-center justify-end gap-1.5">
                   <EditDistributionPointDialog point={point} />
+                  <DeleteDistributionPointDialog pointId={point.id} pointName={point.name} />
                 </div>
               </TableCell>
             </TableRow>

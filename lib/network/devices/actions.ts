@@ -6,7 +6,10 @@ import { Prisma } from "@prisma/client";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import type { DeleteActionResult } from "@/components/shared/delete-confirm-dialog";
+import { DeleteBlockedError } from "@/lib/shared/errors";
 import { createDeviceSchema, updateDeviceSchema } from "./schema";
+import { deleteDevice } from "./service";
 
 export interface DeviceFormState {
   errors?: Record<string, string[]>;
@@ -113,5 +116,24 @@ export async function updateDeviceAction(
 
   revalidatePath("/network/devices");
   revalidatePath(`/network/devices/${deviceId}`);
+  return { ok: true };
+}
+
+export async function deleteDeviceAction(deviceId: string): Promise<DeleteActionResult> {
+  const session = await auth();
+  if (!session) {
+    return { error: "يجب تسجيل الدخول للقيام بهذا الإجراء." };
+  }
+
+  try {
+    await deleteDevice(deviceId, session.user.id);
+  } catch (err) {
+    if (err instanceof DeleteBlockedError) {
+      return { error: err.reasons.join(" ") };
+    }
+    return { error: "حدث خطأ أثناء حذف الجهاز. حاول مرة أخرى." };
+  }
+
+  revalidatePath("/network/devices");
   return { ok: true };
 }
