@@ -5,7 +5,11 @@ import type {
   SwitchPort,
 } from "@prisma/client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AssignNetworkDialog,
+  type NetworkTreePoint,
+} from "@/components/network/assign-network-dialog";
 
 type NetworkSummary =
   | (NetworkAssignment & {
@@ -16,14 +20,25 @@ type NetworkSummary =
   | null;
 
 export function CustomerNetworkSummary({
+  customerId,
   assignment,
+  networkTree,
 }: {
+  customerId: string;
   assignment: NetworkSummary;
+  networkTree: NetworkTreePoint[];
 }) {
   return (
     <Card>
       <CardHeader>
         <CardTitle>الشبكة</CardTitle>
+        <CardAction>
+          <AssignNetworkDialog
+            customerId={customerId}
+            tree={networkTree}
+            hasCurrentAssignment={Boolean(assignment)}
+          />
+        </CardAction>
       </CardHeader>
       <CardContent>
         {!assignment ? (

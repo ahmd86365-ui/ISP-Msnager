@@ -55,7 +55,7 @@ export async function listCustomers(params: ListCustomersParams) {
 export async function listBuildingsForSelect() {
   return prisma.building.findMany({
     orderBy: { name: "asc" },
-    select: { id: true, name: true },
+    select: { id: true, name: true, distributionPointId: true },
   });
 }
 

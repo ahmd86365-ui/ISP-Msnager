@@ -1,7 +1,5 @@
-import { Network } from "lucide-react";
-
-import { ComingSoon } from "@/components/dashboard/coming-soon";
+import { redirect } from "next/navigation";
 
 export default function NetworkPage() {
-  return <ComingSoon title="الشبكة" icon={Network} />;
+  redirect("/network/distribution-points");
 }

@@ -1,5 +1,7 @@
 import type {
   BillingPeriod,
+  EquipmentStatus,
+  NetworkDeviceType,
   PaymentMethod,
   Role,
   SubscriptionStatus,
@@ -89,5 +91,27 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   CASH: "نقداً",
   TRANSFER: "تحويل بنكي",
   WALLET: "محفظة إلكترونية",
+  OTHER: "أخرى",
+};
+
+export const EQUIPMENT_STATUS_LABELS: Record<EquipmentStatus, string> = {
+  ACTIVE: "فعال",
+  INACTIVE: "غير فعال",
+  MAINTENANCE: "قيد الصيانة",
+  DISABLED: "معطّل",
+};
+
+export const EQUIPMENT_STATUS_STYLE: Record<EquipmentStatus, StatusStyle> = {
+  ACTIVE: { color: "var(--status-good)", tint: "bg-status-good/10" },
+  INACTIVE: { color: "var(--muted-foreground)", tint: "bg-muted" },
+  MAINTENANCE: { color: "var(--status-warning)", tint: "bg-status-warning/15" },
+  DISABLED: { color: "var(--status-critical)", tint: "bg-status-critical/10" },
+};
+
+export const NETWORK_DEVICE_TYPE_LABELS: Record<NetworkDeviceType, string> = {
+  ROUTER: "راوتر",
+  SWITCH: "سويتش",
+  ACCESS_POINT: "نقطة وصول لاسلكية",
+  CPE: "جهاز مشترك (CPE)",
   OTHER: "أخرى",
 };

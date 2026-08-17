@@ -24,6 +24,7 @@ import {
   getCustomerRecentPayments,
 } from "@/lib/payments/queries";
 import { getCustomerBalance } from "@/lib/payments/service";
+import { listNetworkTreeForAssignmentForm } from "@/lib/network/assignments/queries";
 
 export default async function CustomerDetailPage({
   params,
@@ -48,6 +49,7 @@ export default async function CustomerDetailPage({
     recentPayments,
     totalPaidSyp,
     balance,
+    networkTree,
   ] = await Promise.all([
     getCustomerSubscriptionSummary(id),
     getCustomerNetworkSummary(id),
@@ -59,6 +61,7 @@ export default async function CustomerDetailPage({
     getCustomerRecentPayments(id),
     getCustomerPaymentsTotal(id),
     getCustomerBalance(id),
+    listNetworkTreeForAssignmentForm(),
   ]);
 
   return (
@@ -159,7 +162,11 @@ export default async function CustomerDetailPage({
           subscription={subscription}
           activePlans={activePlans}
         />
-        <CustomerNetworkSummary assignment={networkAssignment} />
+        <CustomerNetworkSummary
+          customerId={customer.id}
+          assignment={networkAssignment}
+          networkTree={networkTree}
+        />
       </div>
 
       <CustomerPaymentsSummary
