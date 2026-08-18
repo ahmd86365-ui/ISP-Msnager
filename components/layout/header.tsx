@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { HeaderUser } from "./header-user";
 import { NotificationsMenu } from "./notifications-menu";
 import { MobileNav } from "./mobile-nav";
+import { GlobalSearch } from "./global-search";
 
 export async function Header({
   user,
@@ -25,6 +26,7 @@ export async function Header({
     <header className="flex items-center justify-between border-b bg-background px-4 py-3 lg:px-6">
       <HeaderUser name={user.name} role={user.role} />
       <div className="flex items-center gap-1">
+        <GlobalSearch />
         <NotificationsMenu unreadCount={unreadCount} items={recentNotifications} />
         <MobileNav user={user} />
       </div>
