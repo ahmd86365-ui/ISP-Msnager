@@ -1,6 +1,7 @@
+import Link from "next/link";
 import type { TicketCategory, TicketPriority, TicketStatus } from "@prisma/client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusTag } from "@/components/shared/status-tag";
 import {
   TICKET_CATEGORY_LABELS,
@@ -8,6 +9,8 @@ import {
   TICKET_PRIORITY_STYLE,
 } from "@/lib/labels";
 import { formatRelativeArabic } from "@/lib/format";
+import { CustomerAddTicketDialog } from "@/components/tickets/customer-add-ticket-dialog";
+import type { TechnicianOption } from "@/components/tickets/ticket-form";
 
 interface TicketRow {
   id: string;
@@ -18,11 +21,22 @@ interface TicketRow {
   createdAt: Date;
 }
 
-export function CustomerTicketsSummary({ tickets }: { tickets: TicketRow[] }) {
+export function CustomerTicketsSummary({
+  customerId,
+  tickets,
+  technicians,
+}: {
+  customerId: string;
+  tickets: TicketRow[];
+  technicians: TechnicianOption[];
+}) {
   return (
     <Card>
       <CardHeader>
         <CardTitle>آخر الأعطال</CardTitle>
+        <CardAction>
+          <CustomerAddTicketDialog customerId={customerId} technicians={technicians} />
+        </CardAction>
       </CardHeader>
       <CardContent className="flex flex-col gap-1">
         {tickets.length === 0 ? (
@@ -31,9 +45,10 @@ export function CustomerTicketsSummary({ tickets }: { tickets: TicketRow[] }) {
           </p>
         ) : (
           tickets.map((ticket) => (
-            <div
+            <Link
               key={ticket.id}
-              className="flex items-center justify-between gap-3 border-b py-2.5 last:border-b-0"
+              href={`/tickets/${ticket.id}`}
+              className="flex items-center justify-between gap-3 border-b py-2.5 last:border-b-0 hover:bg-muted/50"
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-foreground">
@@ -53,7 +68,7 @@ export function CustomerTicketsSummary({ tickets }: { tickets: TicketRow[] }) {
                   {formatRelativeArabic(ticket.createdAt)}
                 </span>
               </div>
-            </div>
+            </Link>
           ))
         )}
       </CardContent>

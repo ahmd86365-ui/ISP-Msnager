@@ -36,9 +36,10 @@ export function RecentTickets({ tickets }: { tickets: RecentTicket[] }) {
           </p>
         ) : (
           tickets.map((ticket) => (
-            <div
+            <Link
               key={ticket.id}
-              className="flex items-center justify-between gap-3 border-b py-3 last:border-b-0"
+              href={`/tickets/${ticket.id}`}
+              className="flex items-center justify-between gap-3 border-b py-3 last:border-b-0 hover:bg-muted/50"
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-foreground">
@@ -65,7 +66,7 @@ export function RecentTickets({ tickets }: { tickets: RecentTicket[] }) {
                   {formatRelativeArabic(ticket.createdAt)}
                 </span>
               </div>
-            </div>
+            </Link>
           ))
         )}
 

@@ -7,6 +7,7 @@ import {
   Package,
   Router,
   Settings,
+  UserCog,
   Users,
   Wallet,
   Wrench,
@@ -29,6 +30,7 @@ export const navItems: NavItem[] = [
   { label: "الأبنية", href: "/network/buildings", icon: Building2 },
   { label: "الأجهزة", href: "/network/devices", icon: Router },
   { label: "الأعطال", href: "/tickets", icon: Wrench },
+  { label: "الفنيين", href: "/technicians", icon: UserCog },
   { label: "التقارير", href: "/reports", icon: BarChart3 },
   { label: "الإعدادات", href: "/settings", icon: Settings },
 ];
