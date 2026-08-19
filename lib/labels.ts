@@ -108,6 +108,14 @@ export const EQUIPMENT_STATUS_STYLE: Record<EquipmentStatus, StatusStyle> = {
   DISABLED: { color: "var(--status-critical)", tint: "bg-status-critical/10" },
 };
 
+export const ROLE_STYLE: Record<Role, StatusStyle> = {
+  OWNER: { color: "var(--status-good)", tint: "bg-status-good/10" },
+  ADMIN: { color: "var(--chart-1)", tint: "bg-chart-1/10" },
+  ACCOUNTANT: { color: "var(--chart-2)", tint: "bg-chart-2/10" },
+  SUPPORT: { color: "var(--chart-4)", tint: "bg-chart-4/10" },
+  TECHNICIAN: { color: "var(--chart-3)", tint: "bg-chart-3/10" },
+};
+
 export const NETWORK_DEVICE_TYPE_LABELS: Record<NetworkDeviceType, string> = {
   ROUTER: "راوتر",
   SWITCH: "سويتش",

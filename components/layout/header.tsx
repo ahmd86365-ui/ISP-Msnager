@@ -1,5 +1,5 @@
 import type { Role } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { getUnreadNotificationCount, listRecentNotifications } from "@/lib/notifications/queries";
 import { HeaderUser } from "./header-user";
 import { NotificationsMenu } from "./notifications-menu";
 import { MobileNav } from "./mobile-nav";
@@ -11,15 +11,8 @@ export async function Header({
   user: { id: string; name: string; role: Role };
 }) {
   const [unreadCount, recentNotifications] = await Promise.all([
-    prisma.notification.count({
-      where: { recipientId: user.id, isRead: false },
-    }),
-    prisma.notification.findMany({
-      where: { recipientId: user.id },
-      orderBy: { createdAt: "desc" },
-      take: 5,
-      select: { id: true, title: true, body: true, createdAt: true },
-    }),
+    getUnreadNotificationCount(user.id),
+    listRecentNotifications(user.id),
   ]);
 
   return (

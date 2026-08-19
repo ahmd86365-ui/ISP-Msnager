@@ -4,6 +4,7 @@ import type { TicketCategory, TicketPriority, TicketStatus } from "@prisma/clien
 
 import { prisma } from "@/lib/prisma";
 import { TICKET_STATUS_LABELS } from "@/lib/labels";
+import { createNotification, notifyActiveAdmins } from "@/lib/notifications/service";
 import { computeTicketStatusChange } from "./status";
 
 export async function createTicket(params: {
@@ -39,6 +40,21 @@ export async function createTicket(params: {
         summary: `تم فتح بلاغ: ${ticket.title}`,
       },
     });
+
+    // CRITICAL tickets page every active OWNER/ADMIN — see the approved
+    // Notifications plan's fixed rule set (not configurable/invented here).
+    if (ticket.priority === "CRITICAL") {
+      await notifyActiveAdmins(
+        {
+          type: "TICKET_CRITICAL_CREATED",
+          title: "بلاغ حرج جديد",
+          body: ticket.title,
+          relatedEntityType: "Ticket",
+          relatedEntityId: ticket.id,
+        },
+        tx,
+      );
+    }
 
     return ticket;
   });
@@ -77,6 +93,11 @@ export async function assignTicketTechnician(params: {
   actorId: string;
 }) {
   return prisma.$transaction(async (tx) => {
+    const previous = await tx.ticket.findUniqueOrThrow({
+      where: { id: params.ticketId },
+      select: { assignedTechnicianId: true },
+    });
+
     const ticket = await tx.ticket.update({
       where: { id: params.ticketId },
       data: { assignedTechnicianId: params.assignedTechnicianId ?? null },
@@ -93,6 +114,25 @@ export async function assignTicketTechnician(params: {
           : `تم إلغاء إسناد البلاغ "${ticket.title}"`,
       },
     });
+
+    // Only a genuinely new assignee is notified — reassigning to the same
+    // technician or unassigning entirely doesn't page anyone.
+    const isNewAssignment =
+      ticket.assignedTechnicianId !== null &&
+      ticket.assignedTechnicianId !== previous.assignedTechnicianId;
+    if (isNewAssignment) {
+      await createNotification(
+        {
+          recipientId: ticket.assignedTechnicianId!,
+          type: "TICKET_ASSIGNED",
+          title: "تم إسنادك إلى بلاغ",
+          body: ticket.title,
+          relatedEntityType: "Ticket",
+          relatedEntityId: ticket.id,
+        },
+        tx,
+      );
+    }
 
     return ticket;
   });

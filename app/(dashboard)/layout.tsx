@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
+import { runSubscriptionExpiryReconciliationIfDue } from "@/lib/notifications/service";
 
 export default async function DashboardLayout({
   children,
@@ -20,6 +21,10 @@ export default async function DashboardLayout({
     name: sessionUser.name ?? sessionUser.username,
     role: sessionUser.role,
   };
+
+  // Throttled to once per calendar day internally — see the function's own
+  // comment for why this stands in for a real scheduled job for now.
+  await runSubscriptionExpiryReconciliationIfDue();
 
   return (
     <div className="flex min-h-screen w-full bg-muted/30">

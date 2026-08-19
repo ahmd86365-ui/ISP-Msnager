@@ -1,6 +1,7 @@
 import { LogOut, Wifi } from "lucide-react";
 
 import type { Role } from "@prisma/client";
+import { Separator } from "@/components/ui/separator";
 import { ROLE_LABELS } from "@/lib/labels";
 import { logoutAction } from "@/lib/auth/actions";
 import { SidebarNav } from "./sidebar-nav";
@@ -32,13 +33,16 @@ export function SidebarContent({ user, onNavigate }: SidebarContentProps) {
             </p>
           </div>
         </div>
+
+        <Separator className="my-2 bg-sidebar-border" />
+
         <form action={logoutAction}>
           <button
             type="submit"
-            className="mt-1 flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-status-critical/80 transition-colors hover:bg-status-critical/10 hover:text-status-critical"
           >
-            <span>تسجيل خروج</span>
-            <LogOut className="size-4.5 shrink-0" />
+            <LogOut className="size-4 shrink-0" />
+            <span>تسجيل الخروج</span>
           </button>
         </form>
       </div>

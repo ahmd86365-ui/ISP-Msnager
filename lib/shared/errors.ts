@@ -11,3 +11,14 @@ export class DeleteBlockedError extends Error {
     this.reasons = reasons;
   }
 }
+
+// Thrown by a service function when the acting user is authenticated but
+// not allowed to perform this specific action (e.g. an ADMIN acting on an
+// OWNER account — see lib/users/guard.ts). Server actions catch this and
+// surface `message` to the UI instead of a raw database/authorization error.
+export class ForbiddenError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ForbiddenError";
+  }
+}

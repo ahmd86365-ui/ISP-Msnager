@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
+import { notifyActiveAdmins } from "@/lib/notifications/service";
 import { computeDebtSyp, sumDueSubscriptions, sumNonVoidedPayments } from "./balance";
 
 export class InvalidSubscriptionForCustomerError extends Error {
@@ -101,6 +102,23 @@ export async function voidPayment(params: {
         summary: `تم إلغاء دفعة بقيمة ${payment.amountSyp} ل.س`,
       },
     });
+
+    // No Payment detail page exists — points at the customer's profile,
+    // where the voided payment is visible in their payment history.
+    const customer = await tx.customer.findUniqueOrThrow({
+      where: { id: payment.customerId },
+      select: { fullName: true },
+    });
+    await notifyActiveAdmins(
+      {
+        type: "PAYMENT_VOIDED",
+        title: "تم إلغاء دفعة",
+        body: `${payment.amountSyp} ل.س — ${customer.fullName}`,
+        relatedEntityType: "Customer",
+        relatedEntityId: payment.customerId,
+      },
+      tx,
+    );
 
     return payment;
   });
